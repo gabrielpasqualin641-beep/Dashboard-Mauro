@@ -1,0 +1,58 @@
+name: Atualizar dashboard
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+      - run: npx tsx scripts/coletar.ts
+        env:
+          META_API_VERSION: v27.0
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_AD_ACCOUNT_BR: ${{ secrets.META_AD_ACCOUNT_BR }}
+          META_AD_ACCOUNT_US: ${{ secrets.META_AD_ACCOUNT_US }}
+          HOTMART_CLIENT_ID: ${{ secrets.HOTMART_CLIENT_ID }}
+          HOTMART_CLIENT_SECRET: ${{ secrets.HOTMART_CLIENT_SECRET }}
+          HOTMART_BASIC: ${{ secrets.HOTMART_BASIC }}
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+          SALT_HASH: ${{ secrets.SALT_HASH }}
+          USD_BRL_FALLBACK: "5.40"
+      # Varre out/ antes de publicar: falha se achar token, valor de Secret ou dado pessoal.
+      - run: npm run verificar
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_AD_ACCOUNT_BR: ${{ secrets.META_AD_ACCOUNT_BR }}
+          META_AD_ACCOUNT_US: ${{ secrets.META_AD_ACCOUNT_US }}
+          HOTMART_CLIENT_ID: ${{ secrets.HOTMART_CLIENT_ID }}
+          HOTMART_CLIENT_SECRET: ${{ secrets.HOTMART_CLIENT_SECRET }}
+          HOTMART_BASIC: ${{ secrets.HOTMART_BASIC }}
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+          SALT_HASH: ${{ secrets.SALT_HASH }}
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: out }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
