@@ -48,7 +48,17 @@ function CaixaTooltip({ titulo, linhas }: { titulo: string; linhas: Array<[strin
  * Duas leituras, um eixo cada (nada de gráfico com dois eixos Y):
  * em cima o investimento diário; embaixo o ROAS real com as linhas de empate e escala.
  */
-export function GraficoDiario({ dados, moeda }: { dados: PontoDia[]; moeda: Moeda }) {
+export function GraficoDiario({
+  dados,
+  moeda,
+  rotuloRoas = 'ROAS real',
+  rotuloFaturamento = 'Faturamento real',
+}: {
+  dados: PontoDia[];
+  moeda: Moeda;
+  rotuloRoas?: string;
+  rotuloFaturamento?: string;
+}) {
   const maxRoas = Math.max(METAS.roasEscala * 1.25, ...dados.map((d) => d.roas ?? 0));
   const tooltip = ({ active, payload }: { active?: boolean; payload?: ReadonlyArray<{ payload?: unknown }> }) => {
     if (!active || !payload?.length) return null;
@@ -58,8 +68,8 @@ export function GraficoDiario({ dados, moeda }: { dados: PontoDia[]; moeda: Moed
         titulo={diaCurto(p.date)}
         linhas={[
           ['Investimento', dinheiro(p.investimento, moeda)],
-          ['Faturamento real', dinheiro(p.faturamento, moeda)],
-          ['ROAS real', p.roas === null ? '—' : `${decimal(p.roas)}×`],
+          [rotuloFaturamento, dinheiro(p.faturamento, moeda)],
+          [rotuloRoas, p.roas === null ? '—' : `${decimal(p.roas)}×`],
           ['Vendas', inteiro(p.vendas)],
         ]}
       />
@@ -80,7 +90,7 @@ export function GraficoDiario({ dados, moeda }: { dados: PontoDia[]; moeda: Moed
         </ResponsiveContainer>
       </div>
       <p className="pt-2 text-xs text-suave">
-        ROAS real por dia ·{' '}
+        {rotuloRoas} por dia ·{' '}
         <span style={{ color: COR_EMPATE }}>– – empate {decimal(METAS.roasEmpate)}×</span> ·{' '}
         <span style={{ color: COR_ESCALA }}>– – escala {decimal(METAS.roasEscala)}×</span>
       </p>

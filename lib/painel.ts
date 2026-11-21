@@ -72,6 +72,7 @@ export interface Kpis {
   ticket: number;
   resultado: number;
   comprasMeta: number;
+  checkouts: number;
 }
 
 export interface Etapa {
@@ -139,6 +140,12 @@ export interface Painel {
   pais: FiltroPais;
   moeda: Moeda;
   exemplo: boolean;
+  /**
+   * De onde vêm vendas e faturamento: Hotmart (venda real, valor líquido) ou,
+   * enquanto a Hotmart não estiver conectada, o pixel do Meta (compras e valor
+   * de compra registrados pelo Meta, valor bruto).
+   */
+  origemVendas: 'hotmart' | 'meta-pixel';
   cambio: { atual: number; fonte: string };
   fontes: StatusFonte[];
   kpis: Kpis;
@@ -206,6 +213,7 @@ export function statusDasFontes(dados: DadosColetados): StatusFonte[] {
     return {
       ...ROTULO_FONTE[k],
       estado,
+      motivo: f.motivo,
       mensagem: f.motivo ? TEXTO_MOTIVO[f.motivo] ?? f.motivo : undefined,
       atualizadoEm: dados.gerado_em,
     };
@@ -262,7 +270,7 @@ function somarVendas(vendas: VendaHotmart[]) {
   let netUsd = 0;
   for (const v of vendas) {
     if (v.status !== 'aprovada') continue;
-    if (ehPedido(v)) pedidos++;
+    if (ehPedido(v)) pedidos += v.qtd ?? 1;
     netBrl += v.netBrl;
     netUsd += v.netUsd;
   }
@@ -289,6 +297,7 @@ function kpis(
     ticket: div(faturamento, vendas.pedidos),
     resultado: faturamento - investimento,
     comprasMeta: meta.compras,
+    checkouts: meta.checkouts,
   };
 }
 
@@ -307,6 +316,46 @@ function ticketDoFunil(chave: FunnelKey, cambio: Cambio): number {
 }
 
 // ───────────────────────────── Montagem ─────────────────────────────
+
+/**
+ * Converte as compras do pixel do Meta em "vendas" (uma por dia × anúncio),
+ * para os cartões e regras funcionarem enquanto a Hotmart não está conectada.
+ * Valor = valor de compra do pixel (bruto). Nada disso aparece na aba Hotmart.
+ */
+export function vendasDoPixel(linhas: LinhaMeta[]): VendaHotmart[] {
+  const out: VendaHotmart[] = [];
+  for (const l of linhas) {
+    if (!l.purchases || l.funnelKey === 'nao-classificada') continue;
+    out.push({
+      date: l.date,
+      ts: 0,
+      productId: '',
+      productKey: 'outro',
+      productName: 'Compra (pixel do Meta)',
+      offer: '',
+      gross: l.purchaseValue,
+      net: l.purchaseValue,
+      currency: l.currency,
+      grossBrl: l.purchaseValueBrl,
+      netBrl: l.purchaseValueBrl,
+      grossUsd: l.purchaseValueUsd,
+      netUsd: l.purchaseValueUsd,
+      status: 'aprovada',
+      sck: 'meta-pixel',
+      src: '',
+      utmSource: '',
+      utmCampaign: '',
+      utmContent: '',
+      hasBump: false,
+      isBump: false,
+      funnelKey: l.funnelKey,
+      country: l.country,
+      buyerHash: null,
+      qtd: l.purchases,
+    });
+  }
+  return out;
+}
 
 export interface ParamsPainel {
   periodo: Periodo;
@@ -339,7 +388,10 @@ export function calcularPainel(dados: DadosColetados, { periodo, pais }: ParamsP
   // ── Filtro de país ──
   const noPais = (c: Pais) => pais === 'TODOS' || c === pais;
   const linhas = linhasTodas.filter((l) => noPais(l.country));
-  const vendasTodas = dados.hotmart.map((v) => {
+  // Sem Hotmart, as compras do pixel do Meta fazem o papel das vendas.
+  const origemVendas: Painel['origemVendas'] = hotmartOk ? 'hotmart' : 'meta-pixel';
+  const fonteVendas = hotmartOk ? dados.hotmart : vendasDoPixel(dados.meta);
+  const vendasTodas = fonteVendas.map((v) => {
     const f = v.funnelKey ? funilPorChave(v.funnelKey) : undefined;
     return f && f.pais !== v.country ? { ...v, country: f.pais } : v;
   });
@@ -470,7 +522,7 @@ export function calcularPainel(dados: DadosColetados, { periodo, pais }: ParamsP
       }
       add('Checkout iniciado', sp.checkouts, sa.checkouts, ref ? diag(regra8PaginaNaoConverte(sp, ref)) : undefined);
     }
-    add('Compra (Hotmart)', sp.vendas, sa.vendas, f?.plataforma !== 'google' ? diag(regra9Checkout(sp)) : undefined);
+    add(hotmartOk ? 'Compra (Hotmart)' : 'Compra (Meta · pixel)', sp.vendas, sa.vendas, f?.plataforma !== 'google' ? diag(regra9Checkout(sp)) : undefined);
 
     return {
       chave,
@@ -769,6 +821,7 @@ export function calcularPainel(dados: DadosColetados, { periodo, pais }: ParamsP
     geradoEm: dados.gerado_em,
     dadosDe,
     janela: dados.janela,
+    origemVendas,
     periodo,
     anterior,
     hoje,
@@ -783,7 +836,9 @@ export function calcularPainel(dados: DadosColetados, { periodo, pais }: ParamsP
     diario,
     funis,
     anuncios: anuncios.sort((a, b) => b.gasto - a.gasto),
-    alertas: ordenarAlertas(alertas),
+    alertas: ordenarAlertas(alertas).map((al) =>
+      hotmartOk ? al : { ...al, numero: al.numero.replace(/ROAS real/g, 'ROAS (pixel)'), titulo: al.titulo.replace(/ROAS real/g, 'ROAS (pixel)') },
+    ),
     divergencia: {
       comprasMeta,
       vendasHotmart: vendasHotMeta,

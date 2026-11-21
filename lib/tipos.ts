@@ -87,6 +87,8 @@ export interface VendaHotmart {
   country: Pais;
   /** sha256(e-mail normalizado + SALT_HASH). Só serve para cruzar Express → 2.0. */
   buyerHash: string | null;
+  /** Quantidade de pedidos que a linha representa (padrão 1; >1 só nas vendas do pixel). */
+  qtd?: number;
 }
 
 export interface LinhaGoogle {
@@ -125,6 +127,8 @@ export interface StatusFonte {
   fonte: NomeFonte;
   rotulo: string;
   estado: EstadoFonte;
+  /** Motivo técnico vindo do coletor (NAO_CONFIGURADO, TOKEN_INVALIDO, …). */
+  motivo?: string;
   mensagem?: string;
   atualizadoEm: string | null; // ISO
 }
