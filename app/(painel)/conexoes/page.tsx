@@ -2,6 +2,7 @@
 
 import { usePainel } from '@/components/PainelContexto';
 import { Cartao, Carregando } from '@/components/ui';
+import { Icone } from '@/components/icones';
 import { BotaoExportar } from '@/components/Exportar';
 import type { ChaveFonte } from '@/lib/dados';
 import { oQueFazer } from '@/lib/conexoes';
@@ -18,6 +19,13 @@ const NOMES: Record<ChaveFonte, string> = {
   meta_us: 'Meta Ads · conta US',
   hotmart: 'Hotmart',
   google: 'Google Ads',
+};
+
+const ICONE_FONTE: Record<ChaveFonte, string> = {
+  meta_br: 'grafico',
+  meta_us: 'grafico',
+  hotmart: 'faturamento',
+  google: 'roasMeta',
 };
 
 export default function Conexoes() {
@@ -55,8 +63,11 @@ export default function Conexoes() {
             <li key={k}>
               <Cartao>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="flex items-center gap-2 font-titulo font-semibold">
-                    <span className={`h-2.5 w-2.5 rounded-full ${cor}`} aria-hidden />
+                  <h3 className="flex items-center gap-2.5 font-titulo font-semibold">
+                    <span className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-destaque/10 text-destaque">
+                      <Icone nome={ICONE_FONTE[k]} width={16} height={16} />
+                      <span className={`absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-superficie ${cor}`} aria-hidden />
+                    </span>
                     {NOMES[k]}
                   </h3>
                   <span className="num text-sm text-suave">

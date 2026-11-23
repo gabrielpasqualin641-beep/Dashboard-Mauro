@@ -2,6 +2,7 @@
 
 import { usePainel } from '@/components/PainelContexto';
 import { Cartao, Carregando, Delta, Dica, Pill } from '@/components/ui';
+import { Icone } from '@/components/icones';
 import { BarraFerramentas, BotaoExportar } from '@/components/Exportar';
 import { dataBR, dinheiro, inteiro, pct, roas } from '@/lib/formato';
 import { n, type Folha } from '@/lib/csv';
@@ -13,12 +14,17 @@ function FunilVisual({ f, per, moeda }: { f: LinhaFunilPainel; per: string; moed
     nome.startsWith('Compra') ? 'Hotmart (vendas aprovadas pelo sck)' : f.plataforma === 'google' ? 'Google Ads' : 'Meta';
   return (
     <Cartao>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="font-titulo text-base font-semibold">{f.nome}</h2>
-          <p className="num text-xs text-suave">
-            {dinheiro(f.investimento, moeda)} investidos · {inteiro(f.vendas)} vendas · ROAS real {roas(f.investimento ? f.roasReal : null)}
-          </p>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destaque/10 text-destaque">
+            <Icone nome="funil" />
+          </span>
+          <div>
+            <h2 className="font-titulo text-base font-semibold leading-tight">{f.nome}</h2>
+            <p className="num text-xs text-suave">
+              {dinheiro(f.investimento, moeda)} · {inteiro(f.vendas)} vendas · ROAS {roas(f.investimento ? f.roasReal : null)}
+            </p>
+          </div>
         </div>
         <Pill valor={f.status} />
       </div>
@@ -39,8 +45,8 @@ function FunilVisual({ f, per, moeda }: { f: LinhaFunilPainel; per: string; moed
               )}
               <div className="flex items-center gap-3">
                 <div className="w-40 shrink-0 text-sm text-suave sm:w-48">{e.nome}</div>
-                <div className="relative h-7 flex-1 overflow-hidden rounded-md bg-superficie2/60">
-                  <div className="h-full rounded-md bg-destaque/70" style={{ width: `${largura}%` }} />
+                <div className="relative h-7 flex-1 overflow-hidden rounded-md bg-superficie2/60 ring-1 ring-inset ring-white/5">
+                  <div className="h-full rounded-md bg-gradient-to-r from-destaque/85 to-destaque/45" style={{ width: `${largura}%` }} />
                   <Dica texto={`Fonte: ${fonte(e.nome)} · ${per}`} className="absolute inset-y-0 left-2 items-center">
                     <span className="num text-sm font-semibold text-texto drop-shadow">{inteiro(e.valor)}</span>
                   </Dica>

@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { usePainel } from '@/components/PainelContexto';
-import { Cartao, Carregando } from '@/components/ui';
+import { Cartao, Carregando, TituloSecao } from '@/components/ui';
+import { Icone } from '@/components/icones';
 import { BotaoExportar } from '@/components/Exportar';
 import { n } from '@/lib/csv';
 import { bonificacaoDoMes } from '@/lib/bonificacao';
@@ -63,20 +64,29 @@ export default function PaginaBonificacao() {
           Cálculo incompleto: faltam dados de {data.faltando.join(', ')}. Não use este valor para pagamento até a fonte voltar.
         </p>
       )}
+      <div className="overflow-hidden rounded-2xl border border-destaque/40 bg-gradient-to-br from-destaque/15 via-superficie to-[#13232F] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_10px_30px_-18px_rgba(0,0,0,0.6)]">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-destaque/20 text-destaque"><Icone nome="resultado" width={22} height={22} /></span>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-suave">Bonificação do mês</p>
+            <p className="num font-titulo text-3xl font-semibold text-destaque">{dinheiro(data.bonus)}</p>
+          </div>
+        </div>
+      </div>
       <Cartao>
-        <h3 className="mb-3 text-xs uppercase tracking-wide text-suave">Memória de cálculo</h3>
+        <TituloSecao>Memória de cálculo</TituloSecao>
         <table className="w-full text-sm">
           <tbody>
             {data.linhas.map((l) => {
               const total = l.sinal === '=' || l.sinal === '×';
               return (
-                <tr key={l.rotulo} className={`border-b border-borda/40 ${total ? 'font-semibold' : ''}`}>
-                  <td className="w-6 py-2 text-center text-apagado">{l.sinal}</td>
-                  <td className="py-2 pr-2">
+                <tr key={l.rotulo} className={`border-b border-borda/30 ${total ? 'font-semibold' : ''}`}>
+                  <td className="w-6 py-2.5 text-center text-apagado">{l.sinal}</td>
+                  <td className="py-2.5 pr-2">
                     {l.rotulo}
                     {l.nota && <span className="block text-[11px] font-normal text-apagado">{l.nota}</span>}
                   </td>
-                  <td className={`num py-2 text-right ${l.sinal === '×' ? 'font-titulo text-lg text-destaque' : ''} ${l.valor < 0 ? 'text-ruim' : ''}`}>
+                  <td className={`num py-2.5 text-right ${l.sinal === '×' ? 'font-titulo text-lg text-destaque' : ''} ${l.valor < 0 ? 'text-ruim' : ''}`}>
                     {dinheiro(l.valor)}
                   </td>
                 </tr>

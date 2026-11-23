@@ -3,21 +3,12 @@
 import { LINK_ABANDONO_HOTMART } from '@/config/operacao';
 import { usePainel } from '@/components/PainelContexto';
 import { Tabela } from '@/components/Tabela';
-import { Cartao, Carregando, Dica, TituloSecao, Vazio } from '@/components/ui';
+import { Cartao, Carregando, MiniStat, TituloSecao, Vazio } from '@/components/ui';
 import { BarraFerramentas, BotaoExportar } from '@/components/Exportar';
 import { n, type Folha } from '@/lib/csv';
 import { dataBR, decimal, dinheiro, inteiro, pct } from '@/lib/formato';
 
-function Numero({ titulo, valor, dica, alerta }: { titulo: string; valor: string; dica: string; alerta?: boolean }) {
-  return (
-    <div>
-      <Dica texto={dica}>
-        <p className="text-xs uppercase tracking-wide text-suave underline decoration-dotted decoration-apagado underline-offset-4">{titulo}</p>
-      </Dica>
-      <p className={`num font-titulo text-xl font-semibold ${alerta ? 'text-ruim' : ''}`}>{valor}</p>
-    </div>
-  );
-}
+const Numero = MiniStat;
 
 export default function Hotmart() {
   const { painel } = usePainel();
@@ -96,30 +87,30 @@ export default function Hotmart() {
 
       <Cartao>
         <TituloSecao>Reembolsos e chargebacks</TituloSecao>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <Numero titulo="Taxa" valor={pct(r.taxa, 1)} dica={`${per} · (reembolsos + chargebacks) ÷ pedidos pagos`} alerta={r.taxa > 0.1} />
-          <Numero titulo="Reembolsos" valor={`${inteiro(r.reembolsos)} · ${dinheiro(r.valorReembolsos, m)}`} dica={per} />
-          <Numero titulo="Chargebacks" valor={`${inteiro(r.chargebacks)} · ${dinheiro(r.valorChargebacks, m)}`} dica={per} />
-          <Numero titulo="Cancelados" valor={inteiro(r.cancelados)} dica={`${per} · pedidos cancelados antes do pagamento`} />
-          <Numero titulo="Pedidos pagos" valor={inteiro(r.total)} dica={`${per} · aprovados + reembolsados + chargeback`} />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Numero titulo="Taxa" valor={pct(r.taxa, 1)} icone="alerta" dica={`${per} · (reembolsos + chargebacks) ÷ pedidos pagos`} alerta={r.taxa > 0.1} />
+          <Numero titulo="Reembolsos" valor={`${inteiro(r.reembolsos)} · ${dinheiro(r.valorReembolsos, m)}`} icone="resultado" dica={per} />
+          <Numero titulo="Chargebacks" valor={`${inteiro(r.chargebacks)} · ${dinheiro(r.valorChargebacks, m)}`} icone="resultado" dica={per} />
+          <Numero titulo="Cancelados" valor={inteiro(r.cancelados)} icone="cpa" dica={`${per} · pedidos cancelados antes do pagamento`} />
+          <Numero titulo="Pedidos pagos" valor={inteiro(r.total)} icone="vendas" dica={`${per} · aprovados + reembolsados + chargeback`} />
         </div>
       </Cartao>
 
       <Cartao>
         <TituloSecao>Order bump</TituloSecao>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <Numero titulo="Aceitação" valor={pct(h.bump.taxa, 1)} dica={`${per} · pedidos com bump ÷ pedidos aprovados`} />
-          <Numero titulo="Pedidos com bump" valor={`${inteiro(h.bump.comBump)} de ${inteiro(h.bump.principais)}`} dica={per} />
-          <Numero titulo="Receita extra" valor={dinheiro(h.bump.receitaExtra, m)} dica={`${per} · líquido dos bumps`} />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Numero titulo="Aceitação" valor={pct(h.bump.taxa, 1)} icone="checkouts" dica={`${per} · pedidos com bump ÷ pedidos aprovados`} />
+          <Numero titulo="Pedidos com bump" valor={`${inteiro(h.bump.comBump)} de ${inteiro(h.bump.principais)}`} icone="vendas" dica={per} />
+          <Numero titulo="Receita extra" valor={dinheiro(h.bump.receitaExtra, m)} icone="faturamento" dica={`${per} · líquido dos bumps`} />
         </div>
       </Cartao>
 
       <Cartao>
         <TituloSecao>Express → CONTROLE 2.0</TituloSecao>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <Numero titulo="Compradores do Express" valor={inteiro(h.recompra.compradoresExpress)} dica="Hotmart · últimos 90 dias coletados, compradores únicos" />
-          <Numero titulo="Compraram o 2.0 depois" valor={`${inteiro(h.recompra.compraram20Depois)} (${pct(h.recompra.taxa, 1)})`} dica="Cruzamento por hash do e-mail (sha256 + SALT_HASH) gerado no coletor; o e-mail nunca é publicado" />
-          <Numero titulo="Tempo médio até o 2.0" valor={h.recompra.diasMedios === null ? '—' : `${decimal(h.recompra.diasMedios, 1)} dias`} dica="Da primeira compra do Express à primeira do 2.0" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Numero titulo="Compradores do Express" valor={inteiro(h.recompra.compradoresExpress)} icone="vendas" dica="Hotmart · últimos 90 dias coletados, compradores únicos" />
+          <Numero titulo="Compraram o 2.0 depois" valor={`${inteiro(h.recompra.compraram20Depois)} (${pct(h.recompra.taxa, 1)})`} icone="faturamento" dica="Cruzamento por hash do e-mail (sha256 + SALT_HASH) gerado no coletor; o e-mail nunca é publicado" />
+          <Numero titulo="Tempo médio até o 2.0" valor={h.recompra.diasMedios === null ? '—' : `${decimal(h.recompra.diasMedios, 1)} dias`} icone="ticket" dica="Da primeira compra do Express à primeira do 2.0" />
         </div>
         <p className="mt-3 text-[11px] text-apagado">
           {h.recompra.disponivel

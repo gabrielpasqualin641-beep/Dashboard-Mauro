@@ -3,7 +3,7 @@
 import { GraficoGoogle } from '@/components/Graficos';
 import { usePainel } from '@/components/PainelContexto';
 import { Tabela } from '@/components/Tabela';
-import { Cartao, Carregando, Dica, TituloSecao, Vazio } from '@/components/ui';
+import { Cartao, Carregando, MiniStat, TituloSecao, Vazio } from '@/components/ui';
 import { BarraFerramentas, BotaoExportar } from '@/components/Exportar';
 import { n, type Folha } from '@/lib/csv';
 import { dataBR, decimal, dinheiro, inteiro, pct } from '@/lib/formato';
@@ -32,12 +32,12 @@ export default function Google() {
   }
   const per = `Google Ads · ${dataBR(painel.periodo.de)} a ${dataBR(painel.periodo.ate)}`;
   const t = g.totais;
-  const itens = [
-    ['Custo', dinheiro(t.custo, 'USD')],
-    ['Cliques', inteiro(t.cliques)],
-    ['CTR', pct(t.ctr, 2)],
-    ['CPC', dinheiro(t.cpc || null, 'USD')],
-    ['Conversões', decimal(t.conversoes, 1)],
+  const itens: Array<[string, string, string]> = [
+    ['Custo', dinheiro(t.custo, 'USD'), 'investimento'],
+    ['Cliques', inteiro(t.cliques), 'checkouts'],
+    ['CTR', pct(t.ctr, 2), 'roasMeta'],
+    ['CPC', dinheiro(t.cpc || null, 'USD'), 'cpa'],
+    ['Conversões', decimal(t.conversoes, 1), 'vendas'],
   ];
   const negativas = g.termos.filter((x) => x.negativa);
   const folhasCSV = (): Folha[] => [
@@ -59,13 +59,8 @@ export default function Google() {
         <BotaoExportar arquivo={`google-ads_${painel.periodo.de}_a_${painel.periodo.ate}`} folhas={folhasCSV} />
       </BarraFerramentas>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        {itens.map(([k, v]) => (
-          <Cartao key={k}>
-            <Dica texto={per}>
-              <p className="text-xs uppercase tracking-wide text-suave underline decoration-dotted decoration-apagado underline-offset-4">{k}</p>
-            </Dica>
-            <p className="num font-titulo text-xl font-semibold">{v}</p>
-          </Cartao>
+        {itens.map(([k, v, ic]) => (
+          <MiniStat key={k} titulo={k} valor={v} icone={ic} dica={per} />
         ))}
       </div>
       <Cartao>

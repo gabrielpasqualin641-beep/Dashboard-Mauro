@@ -161,6 +161,45 @@ export function Pill({ valor, rotulo }: { valor: string; rotulo?: string }) {
   );
 }
 
+/** Indicador compacto para grades dentro de um cartão (Hotmart, Google, resumos). */
+export function MiniStat({
+  titulo,
+  valor,
+  dica,
+  icone,
+  alerta,
+  sub,
+}: {
+  titulo: string;
+  valor: ReactNode;
+  dica?: string;
+  icone?: string;
+  alerta?: boolean;
+  sub?: ReactNode;
+}) {
+  const rotulo = dica ? (
+    <Dica texto={dica}>
+      <p className="text-[11px] font-medium uppercase tracking-wide text-suave underline decoration-dotted decoration-apagado/60 underline-offset-4">{titulo}</p>
+    </Dica>
+  ) : (
+    <p className="text-[11px] font-medium uppercase tracking-wide text-suave">{titulo}</p>
+  );
+  return (
+    <div className="rounded-xl border border-white/5 bg-superficie2/40 p-3">
+      <div className="flex items-center gap-2">
+        {icone && (
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-destaque/10 text-destaque">
+            <Icone nome={icone} width={15} height={15} />
+          </span>
+        )}
+        {rotulo}
+      </div>
+      <p className={`num mt-1.5 font-titulo text-lg font-semibold ${alerta ? 'text-ruim' : 'text-texto'}`}>{valor}</p>
+      {sub && <p className="mt-0.5 text-[11px] text-apagado">{sub}</p>}
+    </div>
+  );
+}
+
 export function Vazio({ children }: { children: ReactNode }) {
   return <p className="rounded-lg border border-dashed border-borda p-6 text-center text-sm text-suave">{children}</p>;
 }

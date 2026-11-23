@@ -61,7 +61,7 @@ export function Tabela<T>({
     <Rolagem>
       <table className="w-full min-w-max border-collapse text-sm">
         <thead>
-          <tr className="border-b border-borda text-xs uppercase tracking-wide text-apagado">
+          <tr className="border-b border-borda/70 bg-superficie2/30 text-xs uppercase tracking-wide text-apagado">
             {colunas.map((c) => {
               const ativa = ordem.chave === c.chave;
               const conteudo = (
@@ -69,7 +69,7 @@ export function Tabela<T>({
                   type="button"
                   disabled={!c.valor}
                   onClick={() => setOrdem({ chave: c.chave, desc: ativa ? !ordem.desc : true })}
-                  className={`inline-flex items-center gap-1 font-medium ${c.valor ? 'hover:text-texto' : 'cursor-default'} ${ativa ? 'text-destaque' : ''}`}
+                  className={`inline-flex items-center gap-1 font-semibold ${c.valor ? 'hover:text-texto' : 'cursor-default'} ${ativa ? 'text-destaque' : ''}`}
                 >
                   {c.titulo}
                   {ativa && <span aria-hidden>{ordem.desc ? '↓' : '↑'}</span>}
@@ -80,8 +80,8 @@ export function Tabela<T>({
                   key={c.chave}
                   scope="col"
                   aria-sort={ativa ? (ordem.desc ? 'descending' : 'ascending') : undefined}
-                  className={`whitespace-nowrap px-3 py-2 ${c.alinhar === 'dir' ? 'text-right' : 'text-left'} ${
-                    c.fixa ? 'sticky left-0 z-10 bg-superficie' : ''
+                  className={`whitespace-nowrap px-3 py-2.5 ${c.alinhar === 'dir' ? 'text-right' : 'text-left'} ${
+                    c.fixa ? 'sticky left-0 z-10 bg-[#152A38]' : ''
                   }`}
                 >
                   {c.dica ? <Dica texto={c.dica}>{conteudo}</Dica> : conteudo}
@@ -121,12 +121,12 @@ function GrupoLinhas<T>({
         </tr>
       )}
       {linhas.map((l) => (
-        <tr key={chaveLinha(l)} className="border-b border-borda/40 hover:bg-superficie2/50">
+        <tr key={chaveLinha(l)} className="group border-b border-borda/30 transition-colors hover:bg-superficie2/40">
           {colunas.map((c) => (
             <td
               key={c.chave}
-              className={`whitespace-nowrap px-3 py-2 ${c.alinhar === 'dir' ? 'num text-right' : ''} ${
-                c.fixa ? 'sticky left-0 z-10 bg-superficie' : ''
+              className={`whitespace-nowrap px-3 py-2.5 ${c.alinhar === 'dir' ? 'num text-right' : ''} ${
+                c.fixa ? 'sticky left-0 z-10 bg-superficie group-hover:bg-[#182F3E]' : ''
               } ${c.classe?.(l) ?? ''}`}
             >
               {c.render(l)}
