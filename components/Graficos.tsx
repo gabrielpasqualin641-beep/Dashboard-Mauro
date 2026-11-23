@@ -1,6 +1,8 @@
 'use client';
 
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -81,11 +83,17 @@ export function GraficoDiario({
       <div className="h-44">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={dados} syncId="diario" margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap={2}>
-            <CartesianGrid stroke={COR_GRADE} strokeOpacity={0.5} vertical={false} />
+            <defs>
+              <linearGradient id="gradInvest" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={COR_SERIE} stopOpacity={0.95} />
+                <stop offset="100%" stopColor={COR_SERIE} stopOpacity={0.45} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke={COR_GRADE} strokeOpacity={0.4} vertical={false} />
             <XAxis dataKey="date" tickFormatter={diaCurto} stroke={COR_EIXO} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} minTickGap={16} />
             <YAxis stroke={COR_EIXO} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={64} tickFormatter={(v: number) => dinheiro(v, moeda, true)} />
             <Tooltip content={tooltip} cursor={{ fill: '#ffffff0d' }} />
-            <Bar dataKey="investimento" name="Investimento" isAnimationActive={false} fill={COR_SERIE} radius={[4, 4, 0, 0]} maxBarSize={28} />
+            <Bar dataKey="investimento" name="Investimento" isAnimationActive={false} fill="url(#gradInvest)" radius={[5, 5, 0, 0]} maxBarSize={30} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -96,15 +104,21 @@ export function GraficoDiario({
       </p>
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={dados} syncId="diario" margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid stroke={COR_GRADE} strokeOpacity={0.5} vertical={false} />
+          <AreaChart data={dados} syncId="diario" margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="gradRoas" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={COR_SERIE} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={COR_SERIE} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke={COR_GRADE} strokeOpacity={0.4} vertical={false} />
             <XAxis dataKey="date" tickFormatter={diaCurto} stroke={COR_EIXO} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} minTickGap={16} />
             <YAxis stroke={COR_EIXO} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={64} domain={[0, Math.ceil(maxRoas * 10) / 10]} tickFormatter={(v: number) => `${decimal(v, 1)}×`} />
             <Tooltip content={tooltip} cursor={{ stroke: COR_EIXO, strokeDasharray: '3 3' }} />
             <ReferenceLine y={METAS.roasEmpate} stroke={COR_EMPATE} strokeDasharray="5 4" ifOverflow="extendDomain" />
             <ReferenceLine y={METAS.roasEscala} stroke={COR_ESCALA} strokeDasharray="5 4" ifOverflow="extendDomain" />
-            <Line dataKey="roas" name="ROAS real" isAnimationActive={false} stroke={COR_SERIE} strokeWidth={2} dot={{ r: 3, fill: COR_SERIE, stroke: '#172C3B', strokeWidth: 2 }} activeDot={{ r: 5 }} connectNulls={false} />
-          </LineChart>
+            <Area dataKey="roas" name="ROAS real" type="monotone" isAnimationActive={false} stroke={COR_SERIE} strokeWidth={2.5} fill="url(#gradRoas)" dot={{ r: 3, fill: COR_SERIE, stroke: '#0F1F2B', strokeWidth: 2 }} activeDot={{ r: 5 }} connectNulls={false} />
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>

@@ -4,7 +4,8 @@ import { METAS } from '@/config/metas';
 import { GraficoDiario } from '@/components/Graficos';
 import { usePainel } from '@/components/PainelContexto';
 import { Tabela, type Coluna } from '@/components/Tabela';
-import { Cartao, Carregando, Delta, Dica, Pill, TituloSecao } from '@/components/ui';
+import { Cartao, Carregando, Dica, KpiCard, Pill, TituloSecao, type KpiProps } from '@/components/ui';
+import { Icone } from '@/components/icones';
 import { BarraFerramentas, BotaoExportar } from '@/components/Exportar';
 import { dataBR, dinheiro, inteiro, pct, roas } from '@/lib/formato';
 import { n, type Folha } from '@/lib/csv';
@@ -23,23 +24,34 @@ export default function VisaoGeral() {
   const fVendas = pixel ? 'Meta · pixel' : 'Hotmart';
   const sufixo = pixel ? ' (Meta · pixel)' : ' real';
 
-  const cartoes: Array<{ titulo: string; valor: string; fonte: string; delta?: React.ReactNode; destaque?: boolean; sub?: string }> = [
-    { titulo: 'Investimento', valor: dinheiro(k.investimento, moeda), fonte: `${fInvest} · gasto convertido para ${moeda === 'USD' ? 'US$' : 'R$'}`, delta: <Delta atual={k.investimento} anterior={a.investimento} sentido="neutro" /> },
+  // Cartão herói (ROAS) + principais no topo, secundários abaixo.
+  const heroi: KpiProps = {
+    titulo: `ROAS${pixel ? ' (Meta · pixel)' : ' real'}`,
+    valor: roas(k.roasReal),
+    icone: 'roas',
+    fonte: `${fVendas} ÷ ${fInvest} · faturamento ÷ investimento`,
+    delta: { atual: k.roasReal, anterior: a.roasReal },
+    destaque: true,
+    sub: `meta: empate ${roas(METAS.roasEmpate)} · escala ${roas(METAS.roasEscala)}`,
+  };
+  const principais: KpiProps[] = [
+    { titulo: 'Investimento', valor: dinheiro(k.investimento, moeda), icone: 'investimento', fonte: `${fInvest} · gasto convertido para ${moeda === 'USD' ? 'US$' : 'R$'}`, delta: { atual: k.investimento, anterior: a.investimento, sentido: 'neutro' } },
     pixel
-      ? { titulo: 'Faturamento (Meta · pixel)', valor: dinheiro(k.faturamento, moeda), fonte: 'Meta · valor de compra registrado pelo pixel (bruto, janela 7d clique + 1d visualização). Não é o dinheiro que entrou: conecte a Hotmart para o faturamento real.', delta: <Delta atual={k.faturamento} anterior={a.faturamento} /> }
-      : { titulo: 'Faturamento real', valor: dinheiro(k.faturamento, moeda), fonte: 'Hotmart · valor líquido das vendas aprovadas com origem de tráfego pago (sck/utm)', delta: <Delta atual={k.faturamento} anterior={a.faturamento} /> },
-    { titulo: `ROAS${pixel ? ' (Meta · pixel)' : ' real'}`, valor: roas(k.roasReal), fonte: `${fVendas} ÷ ${fInvest} · faturamento ÷ investimento`, delta: <Delta atual={k.roasReal} anterior={a.roasReal} />, destaque: true, sub: `empate ${roas(METAS.roasEmpate)} · escala ${roas(METAS.roasEscala)}` },
+      ? { titulo: 'Faturamento (Meta · pixel)', valor: dinheiro(k.faturamento, moeda), icone: 'faturamento', fonte: 'Meta · valor de compra registrado pelo pixel (bruto, janela 7d clique + 1d visualização). Não é o dinheiro que entrou: conecte a Hotmart para o faturamento real.', delta: { atual: k.faturamento, anterior: a.faturamento } }
+      : { titulo: 'Faturamento real', valor: dinheiro(k.faturamento, moeda), icone: 'faturamento', fonte: 'Hotmart · valor líquido das vendas aprovadas com origem de tráfego pago (sck/utm)', delta: { atual: k.faturamento, anterior: a.faturamento } },
+    { titulo: 'Resultado', valor: dinheiro(k.resultado, moeda), icone: 'resultado', fonte: `${fVendas} − ${fInvest} · faturamento − investimento`, delta: { atual: k.resultado, anterior: a.resultado }, valorClasse: k.resultado < 0 ? 'text-ruim' : 'text-bom' },
+  ];
+  const secundarios: KpiProps[] = [
+    { titulo: pixel ? 'Vendas (Meta · pixel)' : 'Vendas', valor: inteiro(k.vendas), icone: 'vendas', fonte: pixel ? 'Meta · compras registradas pelo pixel' : 'Hotmart · pedidos aprovados de tráfego pago (sem contar order bump)', delta: { atual: k.vendas, anterior: a.vendas }, sub: pixel ? undefined : `Meta registrou ${inteiro(k.comprasMeta)}` },
     pixel
-      ? { titulo: 'Checkouts iniciados', valor: inteiro(k.checkouts), fonte: 'Meta · evento InitiateCheckout do pixel', delta: <Delta atual={k.checkouts} anterior={a.checkouts} />, sub: k.checkouts ? `${(k.vendas / k.checkouts * 100).toFixed(0)}% viraram compra` : undefined }
-      : { titulo: 'ROAS do Meta', valor: roas(k.roasMeta), fonte: 'Meta · valor de compra do pixel ÷ gasto do Meta (só para comparação)', delta: <Delta atual={k.roasMeta} anterior={a.roasMeta} /> },
-    { titulo: pixel ? 'Vendas (Meta · pixel)' : 'Vendas', valor: inteiro(k.vendas), fonte: pixel ? 'Meta · compras registradas pelo pixel' : 'Hotmart · pedidos aprovados de tráfego pago (sem contar order bump)', delta: <Delta atual={k.vendas} anterior={a.vendas} />, sub: pixel ? undefined : `Meta registrou ${inteiro(k.comprasMeta)}` },
-    { titulo: `CPA${sufixo}`, valor: dinheiro(k.vendas ? k.cpa : null, moeda), fonte: `${fInvest} ÷ ${fVendas} · investimento ÷ vendas`, delta: <Delta atual={k.cpa} anterior={a.cpa} sentido="desce" /> },
-    { titulo: 'Ticket médio', valor: dinheiro(k.vendas ? k.ticket : null, moeda), fonte: `${fVendas} · faturamento ÷ vendas`, delta: <Delta atual={k.ticket} anterior={a.ticket} /> },
-    { titulo: 'Resultado', valor: dinheiro(k.resultado, moeda), fonte: `${fVendas} − ${fInvest} · faturamento − investimento`, delta: <Delta atual={k.resultado} anterior={a.resultado} /> },
+      ? { titulo: 'Checkouts iniciados', valor: inteiro(k.checkouts), icone: 'checkouts', fonte: 'Meta · evento InitiateCheckout do pixel', delta: { atual: k.checkouts, anterior: a.checkouts }, sub: k.checkouts ? `${((k.vendas / k.checkouts) * 100).toFixed(0)}% viraram compra` : undefined }
+      : { titulo: 'ROAS do Meta', valor: roas(k.roasMeta), icone: 'roasMeta', fonte: 'Meta · valor de compra do pixel ÷ gasto do Meta (só para comparação)', delta: { atual: k.roasMeta, anterior: a.roasMeta } },
+    { titulo: `CPA${sufixo}`, valor: dinheiro(k.vendas ? k.cpa : null, moeda), icone: 'cpa', fonte: `${fInvest} ÷ ${fVendas} · investimento ÷ vendas`, delta: { atual: k.cpa, anterior: a.cpa, sentido: 'desce' } },
+    { titulo: 'Ticket médio', valor: dinheiro(k.vendas ? k.ticket : null, moeda), icone: 'ticket', fonte: `${fVendas} · faturamento ÷ vendas`, delta: { atual: k.ticket, anterior: a.ticket } },
   ];
 
   const r = painel.ritmo;
-  const corRitmo = r.ritmo > METAS.ritmoVerbaMax || r.ritmo < METAS.ritmoVerbaMin ? 'bg-alerta' : 'bg-bom';
+  const corRitmo = r.ritmo > METAS.ritmoVerbaMax || r.ritmo < METAS.ritmoVerbaMin ? 'from-alerta/80 to-alerta' : 'from-bom/70 to-bom';
 
   const colunas: Coluna<LinhaFunilPainel>[] = [
     { chave: 'nome', titulo: 'Funil', valor: (l) => l.nome, render: (l) => <span className={l.chave === 'nao-classificada' ? 'text-alerta' : ''}>{l.nome}</span>, fixa: true },
@@ -109,39 +121,49 @@ export default function VisaoGeral() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {cartoes.map((c) => (
-          <Cartao key={c.titulo} className={c.destaque ? 'border-destaque/50' : ''}>
-            <Dica texto={`Fonte: ${c.fonte} · ${per}`}>
-              <h3 className="text-xs uppercase tracking-wide text-suave underline decoration-dotted decoration-apagado underline-offset-4">{c.titulo}</h3>
-            </Dica>
-            <p className={`num mt-1 font-titulo text-2xl font-semibold ${c.destaque ? 'text-destaque' : ''}`}>{c.valor}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2">{c.delta}</div>
-            {c.sub && <p className="mt-0.5 text-[11px] text-apagado">{c.sub}</p>}
-          </Cartao>
-        ))}
-        <Cartao className="sm:col-span-2 lg:col-span-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <Dica texto="Meta BR · gasto do mês atual (sempre BR, independente do filtro) ÷ verba mensal, comparado com a fração do mês já decorrida">
-              <h3 className="text-xs uppercase tracking-wide text-suave underline decoration-dotted decoration-apagado underline-offset-4">Ritmo da verba BR (mês atual)</h3>
-            </Dica>
-            {r.disponivel ? (
-              <p className="num text-sm">
-                <span className="font-titulo text-lg font-semibold">{dinheiro(r.gastoMes)}</span>
-                <span className="text-suave"> de {dinheiro(r.verba, 'BRL', true)} · {pct(r.pctGasto, 0)} gasto com {pct(r.pctMes, 0)} do mês · ritmo {pct(r.ritmo, 0)}</span>
-              </p>
-            ) : (
-              <p className="text-sm text-ruim">Meta BR sem dados</p>
-            )}
-          </div>
-          {r.disponivel && (
-            <div className="relative mt-2 h-2.5 rounded-full bg-superficie2" role="img" aria-label={`${pct(r.pctGasto, 0)} da verba gasta, ${pct(r.pctMes, 0)} do mês decorrido`}>
-              <div className={`h-full rounded-full ${corRitmo}`} style={{ width: `${Math.min(100, r.pctGasto * 100)}%` }} />
-              <div className="absolute -top-1 w-0.5 bg-texto" style={{ left: `${Math.min(100, r.pctMes * 100)}%`, height: 18 }} title="Hoje" />
-            </div>
-          )}
-        </Cartao>
+      {/* Topo: ROAS em destaque + três indicadores principais */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+        <div className="lg:row-span-1">
+          <KpiCard {...heroi} />
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:col-span-3">
+          {principais.map((c) => (
+            <KpiCard key={c.titulo} {...c} />
+          ))}
+        </div>
       </div>
+
+      {/* Indicadores secundários */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {secundarios.map((c) => (
+          <KpiCard key={c.titulo} {...c} />
+        ))}
+      </div>
+
+      <Cartao>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Dica texto="Meta BR · gasto do mês atual (sempre BR, independente do filtro) ÷ verba mensal, comparado com a fração do mês já decorrida">
+            <h3 className="flex items-center gap-2 font-titulo text-sm font-semibold text-texto">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-destaque/10 text-destaque"><Icone nome="verba" width={15} height={15} /></span>
+              Ritmo da verba BR <span className="font-sans text-xs font-normal text-apagado">· mês atual</span>
+            </h3>
+          </Dica>
+          {r.disponivel ? (
+            <p className="num text-sm">
+              <span className="font-titulo text-lg font-semibold">{dinheiro(r.gastoMes)}</span>
+              <span className="text-suave"> de {dinheiro(r.verba, 'BRL', true)} · {pct(r.pctGasto, 0)} gasto · {pct(r.pctMes, 0)} do mês · ritmo {pct(r.ritmo, 0)}</span>
+            </p>
+          ) : (
+            <p className="text-sm text-ruim">Meta BR sem dados</p>
+          )}
+        </div>
+        {r.disponivel && (
+          <div className="relative mt-3 h-3 overflow-hidden rounded-full bg-superficie2 ring-1 ring-inset ring-white/5" role="img" aria-label={`${pct(r.pctGasto, 0)} da verba gasta, ${pct(r.pctMes, 0)} do mês decorrido`}>
+            <div className={`h-full rounded-full bg-gradient-to-r ${corRitmo}`} style={{ width: `${Math.min(100, r.pctGasto * 100)}%` }} />
+            <div className="absolute top-1/2 h-5 w-0.5 -translate-y-1/2 rounded bg-texto shadow" style={{ left: `${Math.min(100, r.pctMes * 100)}%` }} title="Hoje" />
+          </div>
+        )}
+      </Cartao>
 
       <Cartao>
         <TituloSecao extra={<span className="text-xs text-apagado">Fonte: {fInvest} (investimento) e {pixel ? 'pixel do Meta' : 'Hotmart'} (faturamento)</span>}>Investimento e ROAS{sufixo} por dia</TituloSecao>
