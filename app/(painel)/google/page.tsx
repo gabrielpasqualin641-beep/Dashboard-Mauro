@@ -4,20 +4,32 @@ import { GraficoGoogle } from '@/components/Graficos';
 import { usePainel } from '@/components/PainelContexto';
 import { Tabela } from '@/components/Tabela';
 import { Cartao, Carregando, Dica, TituloSecao, Vazio } from '@/components/ui';
+import { BarraFerramentas, BotaoExportar } from '@/components/Exportar';
+import { n, type Folha } from '@/lib/csv';
 import { dataBR, decimal, dinheiro, inteiro, pct } from '@/lib/formato';
 
 export default function Google() {
   const { painel } = usePainel();
   if (!painel) return <Carregando />;
   const g = painel.google;
-  if (g.estado === 'nao-configurado') {
+  if (g.estado === 'nao-configurado' || g.estado === 'erro') {
     return (
-      <Vazio>
-        <strong className="text-texto">Conector não configurado.</strong> O Google Ads ainda não entra na coleta automática (fase 2). O restante da dashboard funciona normalmente.
-      </Vazio>
+      <>
+        <BarraFerramentas>
+          <BotaoExportar arquivo="google-ads" folhas={() => []} disabled />
+        </BarraFerramentas>
+        <Vazio>
+          {g.estado === 'nao-configurado' ? (
+            <>
+              <strong className="text-texto">Conector não configurado.</strong> O Google Ads ainda não entra na coleta automática (fase 2). O restante da dashboard funciona normalmente.
+            </>
+          ) : (
+            'Google Ads sem dados no momento (veja o indicador no topo).'
+          )}
+        </Vazio>
+      </>
     );
   }
-  if (g.estado === 'erro') return <Vazio>Google Ads sem dados no momento (veja o indicador no topo).</Vazio>;
   const per = `Google Ads · ${dataBR(painel.periodo.de)} a ${dataBR(painel.periodo.ate)}`;
   const t = g.totais;
   const itens = [
@@ -28,8 +40,24 @@ export default function Google() {
     ['Conversões', decimal(t.conversoes, 1)],
   ];
   const negativas = g.termos.filter((x) => x.negativa);
+  const folhasCSV = (): Folha[] => [
+    {
+      nome: 'Totais',
+      colunas: ['metrica', 'valor'],
+      linhas: [['custo_usd', n(t.custo)], ['cliques', t.cliques], ['impressoes', t.impressoes], ['ctr_%', n(t.ctr * 100, 2)], ['cpc_usd', n(t.cpc)], ['conversoes', n(t.conversoes, 1)]],
+    },
+    { nome: 'Diario', colunas: ['data', 'custo_usd', 'cliques', 'conversoes'], linhas: g.diario.map((d) => [d.date, n(d.custo), d.cliques, n(d.conversoes, 1)]) },
+    {
+      nome: 'Termos de pesquisa',
+      colunas: ['termo', 'campanha', 'custo_usd', 'cliques', 'conversoes', 'sugestao_negativa'],
+      linhas: g.termos.map((x) => [x.term, x.campaign, n(x.custo), x.cliques, n(x.conversoes, 1), x.negativa ?? '']),
+    },
+  ];
   return (
     <div className="space-y-4">
+      <BarraFerramentas titulo={<p className="text-xs text-apagado">{per}</p>}>
+        <BotaoExportar arquivo={`google-ads_${painel.periodo.de}_a_${painel.periodo.ate}`} folhas={folhasCSV} />
+      </BarraFerramentas>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         {itens.map(([k, v]) => (
           <Cartao key={k}>

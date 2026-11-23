@@ -5,7 +5,9 @@ import { Sparkline } from '@/components/Graficos';
 import { usePainel } from '@/components/PainelContexto';
 import { Tabela, type Coluna } from '@/components/Tabela';
 import { Cartao, Carregando, Pill } from '@/components/ui';
+import { BotaoExportar } from '@/components/Exportar';
 import { dataBR, decimal, dinheiro, inteiro, pct, roas } from '@/lib/formato';
+import { n as csvNum, type Folha } from '@/lib/csv';
 import type { LinhaAnuncio } from '@/lib/painel';
 
 const RANKING: Record<string, string> = {
@@ -101,14 +103,29 @@ export default function Criativos() {
         <h2 className="mr-auto font-titulo text-base font-semibold">Criativos</h2>
         <select value={funil} onChange={(e) => setFunil(e.target.value)} className="rounded-md border border-borda bg-superficie2 px-2 py-1 text-xs text-texto" aria-label="Filtrar funil">
           <option value="todos">Todos os funis</option>
-          {funisComAnuncio.map(([k, n]) => (
-            <option key={k} value={k}>{n}</option>
+          {funisComAnuncio.map(([k, nome]) => (
+            <option key={k} value={k}>{nome}</option>
           ))}
         </select>
         <label className="flex items-center gap-1.5 text-xs text-suave">
           <input type="checkbox" checked={porConceito} onChange={(e) => setPorConceito(e.target.checked)} className="accent-[#52BBF6]" />
           Agrupar por conceito
         </label>
+        <BotaoExportar
+          arquivo={`criativos_${painel.periodo.de}_a_${painel.periodo.ate}`}
+          folhas={() => [
+            {
+              nome: 'Anuncios',
+              colunas: ['anuncio', 'conceito', 'conjunto', 'campanha', 'funil', 'status', 'gasto', 'impressoes', 'frequencia', 'cpm', 'ctr_link_%', 'cpc', 'gancho_%', 'retencao_%', 'lpv_por_clique_%', 'checkouts', 'compras', 'cpa', 'roas', 'qualidade', 'acao_sugerida'],
+              linhas: linhas.map((l) => [
+                l.adName, l.conceito, l.adsetName, l.campaignName, l.funilNome, STATUS[l.status] ?? l.status,
+                csvNum(l.gasto), l.impressoes, csvNum(l.frequencia), csvNum(l.cpm), csvNum(l.ctrLink * 100, 2), csvNum(l.cpc),
+                l.gancho === null ? null : csvNum(l.gancho * 100, 1), l.retencao === null ? null : csvNum(l.retencao * 100, 1),
+                csvNum(l.lpvClique * 100, 0), l.checkouts, l.compras, csvNum(l.cpa), csvNum(l.roas), RANKING[l.qualidade] ?? l.qualidade, l.acao,
+              ]),
+            } satisfies Folha,
+          ]}
+        />
       </div>
       <Tabela
         linhas={linhas}

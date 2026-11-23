@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react';
 import { usePainel } from '@/components/PainelContexto';
 import { Cartao, Carregando } from '@/components/ui';
+import { BotaoExportar } from '@/components/Exportar';
+import { n } from '@/lib/csv';
 import { bonificacaoDoMes } from '@/lib/bonificacao';
 import { dataBR, dinheiro } from '@/lib/formato';
 
@@ -19,18 +21,33 @@ export default function PaginaBonificacao() {
     <div className="mx-auto max-w-3xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-titulo text-lg font-semibold">Bonificação da gestão</h2>
-        <select
-          value={data.mes}
-          onChange={(e) => setMes(e.target.value)}
-          className="rounded-md border border-borda bg-superficie px-2 py-1 text-sm text-texto"
-          aria-label="Mês"
-        >
-          {data.meses.map((m) => (
-            <option key={m} value={m}>
-              {rotuloMes(m)}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <select
+            value={data.mes}
+            onChange={(e) => setMes(e.target.value)}
+            className="rounded-md border border-borda bg-superficie px-2 py-1 text-sm text-texto"
+            aria-label="Mês"
+          >
+            {data.meses.map((m) => (
+              <option key={m} value={m}>
+                {rotuloMes(m)}
+              </option>
+            ))}
+          </select>
+          <BotaoExportar
+            arquivo={`bonificacao_${data.mes}`}
+            folhas={() => [
+              {
+                nome: `Bonificacao ${data.mes}`,
+                colunas: ['linha', 'operacao', 'valor', 'nota'],
+                linhas: [
+                  ...data.linhas.map((l) => [l.rotulo, l.sinal, n(l.valor), l.nota ?? '']),
+                  ['BONIFICACAO', '=', n(data.bonus), ''],
+                ],
+              },
+            ]}
+          />
+        </div>
       </div>
       <p className="num text-xs text-apagado">
         {dataBR(data.periodo.de)} a {dataBR(data.periodo.ate)} · tudo em R$ (US convertido pela cotação do dia)

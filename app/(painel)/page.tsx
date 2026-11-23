@@ -5,7 +5,9 @@ import { GraficoDiario } from '@/components/Graficos';
 import { usePainel } from '@/components/PainelContexto';
 import { Tabela, type Coluna } from '@/components/Tabela';
 import { Cartao, Carregando, Delta, Dica, Pill, TituloSecao } from '@/components/ui';
+import { BarraFerramentas, BotaoExportar } from '@/components/Exportar';
 import { dataBR, dinheiro, inteiro, pct, roas } from '@/lib/formato';
+import { n, type Folha } from '@/lib/csv';
 import type { LinhaFunilPainel } from '@/lib/painel';
 
 export default function VisaoGeral() {
@@ -49,8 +51,46 @@ export default function VisaoGeral() {
     { chave: 'status', titulo: 'Status', valor: (l) => l.status, render: (l) => <Pill valor={l.status} />, dica: `Escalar: ROAS ≥ ${roas(METAS.roasEscala)} no período e nos últimos 3 dias · Manter: ≥ ${roas(METAS.roasEmpate)} · Atenção: até 20% abaixo do empate · Pausar: abaixo disso` },
   ];
 
+  const folhasCSV = (): Folha[] => {
+    const varia = (atual: number, ant: number) => (ant ? n(((atual - ant) / Math.abs(ant)) * 100, 1) : null);
+    const kpi = (metrica: string, atual: number, ant: number) => [metrica, n(atual), n(ant), varia(atual, ant)];
+    return [
+      {
+        nome: 'KPIs',
+        colunas: ['metrica', 'valor', 'periodo_anterior', 'variacao_%'],
+        linhas: [
+          kpi('investimento', k.investimento, a.investimento),
+          kpi(pixel ? 'faturamento_pixel' : 'faturamento_real', k.faturamento, a.faturamento),
+          kpi(pixel ? 'roas_pixel' : 'roas_real', k.roasReal, a.roasReal),
+          kpi('roas_meta', k.roasMeta, a.roasMeta),
+          kpi('vendas', k.vendas, a.vendas),
+          kpi('checkouts', k.checkouts, a.checkouts),
+          kpi('cpa', k.cpa, a.cpa),
+          kpi('ticket_medio', k.ticket, a.ticket),
+          kpi('resultado', k.resultado, a.resultado),
+          ['compras_meta_pixel', k.comprasMeta, a.comprasMeta, varia(k.comprasMeta, a.comprasMeta)],
+        ],
+      },
+      {
+        nome: 'Por funil',
+        colunas: ['funil', 'pais', 'investimento', 'investimento_anterior', 'vendas', 'cpa', 'roas_real', 'roas_meta', 'faturamento', 'status'],
+        linhas: painel.funis.map((f) => [f.nome, f.pais ?? '', n(f.investimento), n(f.investimentoAnterior), f.vendas, n(f.cpa), n(f.roasReal), n(f.roasMeta), n(f.faturamento), f.status]),
+      },
+      {
+        nome: 'Diario',
+        colunas: ['data', 'investimento', 'faturamento', 'roas', 'vendas'],
+        linhas: painel.diario.map((d) => [d.date, n(d.investimento), n(d.faturamento), n(d.roas), d.vendas]),
+      },
+    ];
+  };
+
   return (
     <div className="space-y-5">
+      <BarraFerramentas
+        titulo={<p className="text-xs text-apagado">{painel.pais === 'TODOS' ? 'BR + US' : painel.pais} · {per}{pixel ? ' · vendas do pixel do Meta' : ''}</p>}
+      >
+        <BotaoExportar arquivo={`visao-geral_${painel.periodo.de}_a_${painel.periodo.ate}`} folhas={folhasCSV} />
+      </BarraFerramentas>
       {pixel && (
         <div className="rounded-lg border border-alerta/50 bg-alerta/10 px-3 py-2 text-sm text-texto">
           <strong className="text-alerta">Vendas e faturamento vindos do pixel do Meta.</strong> A Hotmart não está conectada, então estes números são o que

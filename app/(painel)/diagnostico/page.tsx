@@ -2,6 +2,8 @@
 
 import { usePainel } from '@/components/PainelContexto';
 import { Cartao, Carregando, Pill, Vazio } from '@/components/ui';
+import { BotaoExportar } from '@/components/Exportar';
+import { n } from '@/lib/csv';
 import { dataBR, dinheiro } from '@/lib/formato';
 
 const GRUPO: Record<number, string> = {
@@ -23,6 +25,19 @@ export default function Diagnostico() {
         <p className="num text-sm text-suave">
           {painel.alertas.length} alerta(s) · {criticos} crítico(s) · {dinheiro(total)} de verba em risco · {dataBR(painel.periodo.de)} a {dataBR(painel.periodo.ate)}
         </p>
+        <span className="ml-auto">
+          <BotaoExportar
+            arquivo={`diagnostico_${painel.periodo.de}_a_${painel.periodo.ate}`}
+            disabled={painel.alertas.length === 0}
+            folhas={() => [
+              {
+                nome: 'Alertas',
+                colunas: ['regra', 'grupo', 'nivel', 'titulo', 'onde', 'por_que', 'o_que_fazer', 'verba_em_risco'],
+                linhas: painel.alertas.map((a) => [a.regra, GRUPO[a.regra] ?? '', a.nivel, a.titulo, a.onde, a.numero, a.acao, n(a.verbaEmRisco)]),
+              },
+            ]}
+          />
+        </span>
       </div>
       <p className="text-xs text-apagado">
         Ordenado por verba em risco (R$). Regras de anúncio de escala e frequência usam sempre os últimos 3 e 7 dias; fonte fora do ar aparece primeiro.

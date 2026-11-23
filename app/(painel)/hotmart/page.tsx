@@ -4,6 +4,8 @@ import { LINK_ABANDONO_HOTMART } from '@/config/operacao';
 import { usePainel } from '@/components/PainelContexto';
 import { Tabela } from '@/components/Tabela';
 import { Cartao, Carregando, Dica, TituloSecao, Vazio } from '@/components/ui';
+import { BarraFerramentas, BotaoExportar } from '@/components/Exportar';
+import { n, type Folha } from '@/lib/csv';
 import { dataBR, decimal, dinheiro, inteiro, pct } from '@/lib/formato';
 
 function Numero({ titulo, valor, dica, alerta }: { titulo: string; valor: string; dica: string; alerta?: boolean }) {
@@ -23,11 +25,45 @@ export default function Hotmart() {
   const h = painel.hotmart;
   const m = painel.moeda;
   const per = `Hotmart · ${dataBR(painel.periodo.de)} a ${dataBR(painel.periodo.ate)}`;
-  if (!h.disponivel) return <Vazio>Hotmart sem dados no momento (veja o indicador no topo).</Vazio>;
   const r = h.reembolsos;
 
+  const folhasCSV = (): Folha[] => [
+    { nome: 'Por produto', colunas: ['produto', 'vendas', 'bruto', 'liquido'], linhas: h.porProduto.map((p) => [p.produto, p.vendas, n(p.bruto), n(p.liquido)]) },
+    { nome: 'Por sck (origem)', colunas: ['sck', 'funil', 'vendas', 'liquido'], linhas: h.porSck.map((p) => [p.sck, p.funil, p.vendas, n(p.liquido)]) },
+    {
+      nome: 'Reembolsos',
+      colunas: ['metrica', 'valor'],
+      linhas: [
+        ['taxa_%', n(r.taxa * 100, 1)], ['reembolsos_qtd', r.reembolsos], ['reembolsos_valor', n(r.valorReembolsos)],
+        ['chargebacks_qtd', r.chargebacks], ['chargebacks_valor', n(r.valorChargebacks)], ['cancelados_qtd', r.cancelados], ['pedidos_pagos', r.total],
+      ],
+    },
+    {
+      nome: 'Order bump e recompra',
+      colunas: ['metrica', 'valor'],
+      linhas: [
+        ['bump_aceitacao_%', n(h.bump.taxa * 100, 1)], ['bump_pedidos_com', h.bump.comBump], ['bump_pedidos_total', h.bump.principais], ['bump_receita_extra', n(h.bump.receitaExtra)],
+        ['express_compradores', h.recompra.compradoresExpress], ['express_viraram_2.0', h.recompra.compraram20Depois], ['express_taxa_%', n(h.recompra.taxa * 100, 1)], ['express_dias_medios', n(h.recompra.diasMedios, 1)],
+      ],
+    },
+  ];
+
+  if (!h.disponivel)
+    return (
+      <>
+        <BarraFerramentas>
+          <BotaoExportar arquivo="hotmart" folhas={folhasCSV} disabled />
+        </BarraFerramentas>
+        <Vazio>Hotmart sem dados no momento (não configurada). Cadastre os Secrets da Hotmart para habilitar esta aba e o export.</Vazio>
+      </>
+    );
+
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <>
+      <BarraFerramentas titulo={<p className="text-xs text-apagado">{per}</p>}>
+        <BotaoExportar arquivo={`hotmart_${painel.periodo.de}_a_${painel.periodo.ate}`} folhas={folhasCSV} />
+      </BarraFerramentas>
+      <div className="grid gap-4 lg:grid-cols-2">
       <Cartao>
         <TituloSecao>Vendas por produto</TituloSecao>
         <Tabela
@@ -102,6 +138,7 @@ export default function Hotmart() {
           Abrir painel da Hotmart ↗
         </a>
       </Cartao>
-    </div>
+      </div>
+    </>
   );
 }

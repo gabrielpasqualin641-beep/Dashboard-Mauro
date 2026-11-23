@@ -2,7 +2,9 @@
 
 import { usePainel } from '@/components/PainelContexto';
 import { Cartao, Carregando, Delta, Dica, Pill } from '@/components/ui';
+import { BarraFerramentas, BotaoExportar } from '@/components/Exportar';
 import { dataBR, dinheiro, inteiro, pct, roas } from '@/lib/formato';
+import { n, type Folha } from '@/lib/csv';
 import type { LinhaFunilPainel } from '@/lib/painel';
 
 function FunilVisual({ f, per, moeda }: { f: LinhaFunilPainel; per: string; moeda: 'BRL' | 'USD' }) {
@@ -64,8 +66,20 @@ export default function Funis() {
   const per = `${dataBR(painel.periodo.de)} a ${dataBR(painel.periodo.ate)}`;
   const comDados = painel.funis.filter((f) => f.investimento > 0 || f.vendas > 0 || f.investimentoAnterior > 0);
   const semDados = painel.funis.filter((f) => !comDados.includes(f));
+  const folhasCSV = (): Folha[] => [
+    {
+      nome: 'Etapas por funil',
+      colunas: ['funil', 'pais', 'etapa', 'valor', 'valor_anterior', 'taxa_sobre_etapa_anterior_%', 'diagnostico'],
+      linhas: painel.funis.flatMap((f) =>
+        f.etapas.map((e) => [f.nome, f.pais ?? '', e.nome, n(e.valor, 0), n(e.anterior, 0), e.taxa === null ? null : n(e.taxa * 100, 1), e.diagnostico ?? '']),
+      ),
+    },
+  ];
   return (
     <div className="space-y-4">
+      <BarraFerramentas>
+        <BotaoExportar arquivo={`funis_${painel.periodo.de}_a_${painel.periodo.ate}`} folhas={folhasCSV} />
+      </BarraFerramentas>
       <p className="text-sm text-suave">
         Impressões → cliques → página → (quiz) → checkout → compra. A taxa é sempre sobre a etapa anterior; a variação compara com o período anterior.
       </p>

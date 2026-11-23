@@ -2,6 +2,7 @@
 
 import { usePainel } from '@/components/PainelContexto';
 import { Cartao, Carregando } from '@/components/ui';
+import { BotaoExportar } from '@/components/Exportar';
 import type { ChaveFonte } from '@/lib/dados';
 import { oQueFazer } from '@/lib/conexoes';
 import { horaSP } from '@/lib/datas';
@@ -26,6 +27,19 @@ export default function Conexoes() {
     <div className="mx-auto max-w-3xl space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-titulo text-lg font-semibold">Conexões</h2>
+        <BotaoExportar
+          arquivo="conexoes"
+          folhas={() => [
+            {
+              nome: 'Status das fontes',
+              colunas: ['fonte', 'ok', 'motivo', 'linhas', 'detalhe', 'coletado_em'],
+              linhas: (Object.keys(NOMES) as ChaveFonte[]).map((k) => {
+                const f = dados.fontes[k] ?? { ok: false, motivo: 'NAO_CONFIGURADO' as const };
+                return [NOMES[k], f.ok ? 'sim' : 'não', f.motivo ?? '', f.linhas ?? null, f.detalhe ?? '', geradoEm ?? ''];
+              }),
+            },
+          ]}
+        />
         {geradoEm && (
           <p className="num text-xs text-suave">
             Última coleta: {dataBR(geradoEm.slice(0, 10))} às {horaSP(geradoEm)} · dias {dataBR(dados.janela.de)} a {dataBR(dados.janela.ate)}
